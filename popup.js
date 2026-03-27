@@ -118,15 +118,31 @@ function scanImageAssetsFn() {
   function getRealSrc(img) {
     return img.currentSrc || img.getAttribute('data-src') || img.getAttribute('data-original') || img.getAttribute('data-lazy-src') || img.src || '';
   }
+
+  function extractCountryFromPath(src) {
+    // Split the URL path into segments and scan left-to-right.
+    // A valid country segment must:
+    //   - Be an exact match to a known code (the full segment between two slashes)
+    //   - NOT be followed by any digit or extra letter (i.e. must be isolated between /)
+    // This way /cl/offer/deals/co05/ correctly returns 'cl' and ignores 'co05'.
+    let pathname = src;
+    try { pathname = new URL(src).pathname; } catch(_) {}
+
+    // Split on '/' and check each segment in order
+    const segments = pathname.split('/');
+    for (const seg of segments) {
+      const lower = seg.toLowerCase();
+      if (CODES.includes(lower)) return lower;
+    }
+    return null;
+  }
+
   const imgs = Array.from(document.querySelectorAll('img'));
   const results = [];
   for (const img of imgs) {
     const src = getRealSrc(img);
     if (!src || src.includes('blank.gif') || src.startsWith('data:') || src.trim() === '') continue;
-    let imgCountry = null;
-    for (const code of CODES) {
-      if (new RegExp('/' + code + '(?:/|[^a-z])', 'i').test(src)) { imgCountry = code; break; }
-    }
+    const imgCountry = extractCountryFromPath(src);
     const short = src.length > 60 ? '…' + src.slice(-57) : src;
     results.push({ src, short, imgCountry, hasCountry: !!imgCountry });
   }
