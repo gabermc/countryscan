@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CountryScan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0A0A0F; --bg2:#111118; --bg3:#1A1A24;
+    --accent:#7B6EF6; --accent2:#A89BFF;
+    --green:#3FFFA2; --amber:#FFB547; --red:#FF5E5E;
+    --text:#F0EFF8; --muted:#7A798F; --border:rgba(123,110,246,0.18);
+  }
+  body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); width:380px; min-height:200px; overflow-x:hidden; }
+
+  /* Header */
+  .header { background:var(--bg2); border-bottom:1px solid var(--border); padding:12px 14px; display:flex; align-items:center; gap:10px; }
+  .logo { width:26px; height:26px; background:var(--accent); border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .logo svg { width:15px; height:15px; }
+  .header-text h1 { font-size:13px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:var(--text); }
+  .header-text p  { font-size:9px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:1px; }
+  .scan-btn { margin-left:auto; background:var(--accent); color:#fff; border:none; border-radius:7px; font-family:'Syne',sans-serif; font-weight:700; font-size:11px; padding:7px 13px; cursor:pointer; letter-spacing:0.04em; transition:all 0.15s; white-space:nowrap; }
+  .scan-btn:hover  { background:var(--accent2); transform:scale(1.03); }
+  .scan-btn:active { transform:scale(0.97); }
+  .scan-btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
+
+  /* Lang selector */
+  .lang-selector-bar { background:var(--bg2); border-bottom:1px solid var(--border); padding:9px 14px; display:flex; align-items:center; gap:8px; }
+  .lang-selector-bar label { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; white-space:nowrap; text-transform:uppercase; letter-spacing:0.06em; }
+  .lang-select { flex:1; background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'DM Mono',monospace; font-size:11px; padding:5px 24px 5px 8px; cursor:pointer; outline:none; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237A798F' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; }
+  .lang-select:focus { border-color:var(--accent); }
+  .lang-select option, .lang-select optgroup { background:#1A1A24; color:var(--text); }
+
+  /* QA Accordion */
+  .qa-accordion { background:var(--bg2); border-bottom:1px solid var(--border); }
+  .qa-accordion-header { display:flex; align-items:center; gap:8px; padding:9px 14px; cursor:pointer; user-select:none; font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; transition:color 0.15s; }
+  .qa-accordion-header:hover { color:var(--accent2); }
+  .qa-badge { font-size:9px; background:rgba(123,110,246,0.15); color:var(--accent2); border:1px solid rgba(123,110,246,0.25); border-radius:3px; padding:1px 5px; font-family:'DM Mono',monospace; }
+  .qa-chevron { margin-left:auto; transition:transform 0.2s; }
+  .qa-accordion.open .qa-chevron { transform:rotate(180deg); }
+  .qa-accordion-body { display:none; flex-direction:column; border-top:1px solid var(--border); }
+  .qa-accordion.open .qa-accordion-body { display:flex; }
+
+  /* QA Panels */
+  .qa-panel { padding:10px 14px; border-bottom:1px solid rgba(123,110,246,0.08); display:flex; flex-direction:column; gap:7px; }
+  .qa-panel:last-child { border-bottom:none; }
+  .qa-panel-header { display:flex; align-items:center; justify-content:space-between; }
+  .qa-panel-label { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; gap:6px; }
+  .qa-run-btn { background:var(--bg3); border:1px solid var(--border); color:var(--accent2); border-radius:5px; font-family:'DM Mono',monospace; font-size:9px; padding:4px 9px; cursor:pointer; letter-spacing:0.04em; transition:all 0.15s; white-space:nowrap; }
+  .qa-run-btn:hover { border-color:var(--accent); background:rgba(123,110,246,0.1); }
+  .qa-run-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .qa-result-box { display:flex; flex-direction:column; gap:4px; }
+  .qa-summary-row { display:flex; align-items:center; gap:7px; background:var(--bg3); border-radius:7px; padding:6px 9px; font-family:'DM Mono',monospace; font-size:10px; }
+  .qa-item { display:flex; align-items:flex-start; gap:7px; background:var(--bg3); border-radius:6px; padding:5px 8px; border:1px solid transparent; font-family:'DM Mono',monospace; font-size:9px; line-height:1.45; }
+  .qa-item.ok  { border-color:rgba(63,255,162,0.2);  background:rgba(63,255,162,0.04); }
+  .qa-item.bad { border-color:rgba(255,94,94,0.3);   background:rgba(255,94,94,0.05); }
+  .qa-item-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:2px; }
+  .qa-item-body { flex:1; color:var(--text); word-break:break-all; }
+  .qa-item-body .dim { color:var(--muted); }
+  .qa-item-goto { background:transparent; border:none; color:var(--accent2); cursor:pointer; font-size:11px; padding:0 2px; flex-shrink:0; transition:color 0.12s; }
+  .qa-item-goto:hover { color:var(--text); }
+  .qa-scroll-list { max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+  .qa-scroll-list::-webkit-scrollbar { width:3px; }
+  .qa-scroll-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+
+  /* Body / states */
+  .body { padding:12px 14px; }
+  .loading-state { text-align:center; padding:26px 0 20px; }
+  .spinner { width:32px; height:32px; border:2px solid var(--bg3); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 10px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-state p { font-size:12px; color:var(--muted); }
+  .error-state { text-align:center; padding:22px 14px; }
+  .error-state p { font-size:12px; color:var(--red); line-height:1.5; white-space:pre-line; }
+
+  .result { display:none; flex-direction:column; gap:9px; }
+  .result.show { display:flex; }
+
+  /* Page info */
+  .page-info-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .page-info-row { display:flex; align-items:flex-start; gap:8px; padding:7px 10px; border-bottom:1px solid rgba(123,110,246,0.1); }
+  .page-info-row:last-child { border-bottom:none; }
+  .page-info-key { font-size:9px; color:var(--muted); font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; min-width:72px; padding-top:1px; flex-shrink:0; }
+  .page-info-val { font-size:10px; color:var(--text); font-family:'DM Mono',monospace; word-break:break-all; line-height:1.45; flex:1; }
+  .page-info-val a { color:var(--accent2); text-decoration:none; }
+  .page-info-val a:hover { text-decoration:underline; }
+  .country-pill { display:inline-flex; align-items:center; gap:4px; background:rgba(123,110,246,0.15); border:1px solid rgba(123,110,246,0.3); border-radius:4px; padding:2px 7px; font-family:'DM Mono',monospace; font-size:10px; color:var(--accent2); font-weight:600; }
+
+  /* Lang card */
+  .lang-card { background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:13px 15px; position:relative; overflow:hidden; }
+  .lang-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--green)); }
+  .lang-label { font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:5px; }
+  .lang-name { font-size:26px; font-weight:800; color:var(--text); letter-spacing:-0.01em; line-height:1; }
+  .lang-code { display:inline-block; margin-top:5px; font-family:'DM Mono',monospace; font-size:11px; background:rgba(123,110,246,0.15); color:var(--accent2); padding:3px 8px; border-radius:4px; border:1px solid rgba(123,110,246,0.25); }
+  .confidence-row { display:flex; align-items:center; gap:8px; margin-top:9px; }
+  .confidence-bar-wrap { flex:1; height:4px; background:var(--bg2); border-radius:99px; overflow:hidden; }
+  .confidence-bar { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),var(--green)); transition:width 0.6s cubic-bezier(0.16,1,0.3,1); width:0%; }
+  .confidence-pct { font-family:'DM Mono',monospace; font-size:11px; color:var(--green); min-width:32px; text-align:right; }
+  .sources-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; }
+  .source-tag { font-family:'DM Mono',monospace; font-size:10px; padding:3px 7px; border-radius:4px; border:1px solid; }
+  .source-tag.match   { background:rgba(63,255,162,0.08); color:var(--green); border-color:rgba(63,255,162,0.2); }
+  .source-tag.neutral { background:rgba(122,121,143,0.1); color:var(--muted); border-color:rgba(122,121,143,0.2); }
+
+  /* Stats */
+  .stats-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:9px 11px; }
+  .stat-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:3px; }
+  .stat-value { font-size:16px; font-weight:700; color:var(--text); }
+
+  /* Script bars */
+  .script-section { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:11px 13px; }
+  .script-title { font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:9px; }
+  .script-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+  .script-row:last-child { margin-bottom:0; }
+  .script-name { font-size:11px; color:var(--text); min-width:72px; }
+  .script-bar-wrap { flex:1; height:3px; background:var(--bg2); border-radius:99px; overflow:hidden; }
+  .script-bar { height:100%; border-radius:99px; transition:width 0.5s cubic-bezier(0.16,1,0.3,1); width:0%; }
+  .script-pct { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); min-width:28px; text-align:right; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="7.5" cy="7.5" r="5.8" stroke="white" stroke-width="1.3"/>
+      <path d="M7.5 1.7C7.5 1.7 5.3 4.3 5.3 7.5s2.2 5.8 2.2 5.8M7.5 1.7C7.5 1.7 9.7 4.3 9.7 7.5s-2.2 5.8-2.2 5.8M1.7 7.5h11.6" stroke="white" stroke-width="1.1" stroke-linecap="round"/>
+      <circle cx="13.2" cy="13.2" r="2.5" fill="white"/>
+      <circle cx="13.2" cy="13.2" r="1.1" fill="#7B6EF6"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <h1>CountryScan</h1>
+    <p>qa country checker</p>
+  </div>
+  <button class="scan-btn" id="scanBtn">Scan</button>
+</div>
+
+<div class="lang-selector-bar">
+  <label for="langSelect">Idioma:</label>
+  <select class="lang-select" id="langSelect">
+    <option value="auto">🔍 Detectar automaticamente</option>
+    <optgroup label="Mais usados">
+      <option value="pt">🇧🇷 Português</option>
+      <option value="en">🇺🇸 English</option>
+      <option value="es">🇪🇸 Español</option>
+      <option value="fr">🇫🇷 Français</option>
+      <option value="de">🇩🇪 Deutsch</option>
+      <option value="it">🇮🇹 Italiano</option>
+      <option value="zh">🇨🇳 中文</option>
+      <option value="ja">🇯🇵 日本語</option>
+      <option value="ko">🇰🇷 한국어</option>
+      <option value="ar">🇸🇦 العربية</option>
+      <option value="ru">🇷🇺 Русский</option>
+    </optgroup>
+    <optgroup label="Europa">
+      <option value="nl">🇳🇱 Nederlands</option>
+      <option value="pl">🇵🇱 Polski</option>
+      <option value="sv">🇸🇪 Svenska</option>
+      <option value="da">🇩🇰 Dansk</option>
+      <option value="fi">🇫🇮 Suomi</option>
+      <option value="nb">🇳🇴 Norsk</option>
+      <option value="el">🇬🇷 Ελληνικά</option>
+      <option value="cs">🇨🇿 Čeština</option>
+      <option value="ro">🇷🇴 Română</option>
+      <option value="hu">🇭🇺 Magyar</option>
+      <option value="uk">🇺🇦 Українська</option>
+      <option value="bg">🇧🇬 Български</option>
+      <option value="hr">🇭🇷 Hrvatski</option>
+      <option value="ca">🏳️ Català</option>
+      <option value="sk">🇸🇰 Slovenčina</option>
+    </optgroup>
+    <optgroup label="Ásia / Oriente Médio">
+      <option value="hi">🇮🇳 हिन्दी</option>
+      <option value="th">🇹🇭 ภาษาไทย</option>
+      <option value="vi">🇻🇳 Tiếng Việt</option>
+      <option value="id">🇮🇩 Bahasa Indonesia</option>
+      <option value="ms">🇲🇾 Bahasa Melayu</option>
+      <option value="tr">🇹🇷 Türkçe</option>
+      <option value="he">🇮🇱 עברית</option>
+    </optgroup>
+  </select>
+</div>
+
+<!-- QA Tools -->
+<div class="qa-accordion" id="qaAccordion">
+  <div class="qa-accordion-header" id="qaAccordionHeader">
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+      <rect x="1" y="1" width="4" height="4" rx="1" stroke="#7A798F" stroke-width="1.2"/>
+      <rect x="6" y="1" width="4" height="4" rx="1" stroke="#7A798F" stroke-width="1.2"/>
+      <rect x="1" y="6" width="4" height="4" rx="1" stroke="#7A798F" stroke-width="1.2"/>
+      <rect x="6" y="6" width="4" height="4" rx="1" stroke="#7A798F" stroke-width="1.2"/>
+    </svg>
+    QA Tools
+    <span class="qa-badge">2</span>
+    <svg class="qa-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none">
+      <path d="M1 1l4 4 4-4" stroke="#7A798F" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="qa-accordion-body">
+
+    <!-- 1: Image/Asset Country -->
+    <div class="qa-panel">
+      <div class="qa-panel-header">
+        <span class="qa-panel-label">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <rect x="1" y="1" width="9" height="9" rx="1.5" stroke="#7A798F" stroke-width="1.1"/>
+            <circle cx="3.5" cy="3.5" r="0.8" fill="#7A798F"/>
+            <path d="M1 7.5l2.5-2 2 2 1.5-1.5L10 9" stroke="#7A798F" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          País dos assets
+        </span>
+        <button class="qa-run-btn" id="imgAuditBtn">Varrer</button>
+      </div>
+      <div id="imgAuditResult" class="qa-result-box" style="display:none;"></div>
+    </div>
+
+    <!-- 2: CTA Country -->
+    <div class="qa-panel">
+      <div class="qa-panel-header">
+        <span class="qa-panel-label">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M1 5.5h9M7.5 2.5l3 3-3 3" stroke="#7A798F" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          País dos CTAs
+        </span>
+        <button class="qa-run-btn" id="ctaAuditBtn">Varrer</button>
+      </div>
+      <div id="ctaAuditResult" class="qa-result-box" style="display:none;"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="body">
+  <div class="loading-state" id="loadingState" style="display:none;">
+    <div class="spinner"></div>
+    <p>Analisando a página…</p>
+  </div>
+  <div class="error-state" id="errorState" style="display:none;">
+    <p id="errorMsg">Não foi possível acessar esta página.</p>
+  </div>
+  <div class="result" id="resultState">
+
+    <div class="page-info-card">
+      <div class="page-info-row">
+        <span class="page-info-key">Título</span>
+        <span class="page-info-val" id="pageTitle">—</span>
+      </div>
+      <div class="page-info-row" id="rowDescription" style="display:none;">
+        <span class="page-info-key">Description</span>
+        <span class="page-info-val" id="pageDescription">—</span>
+      </div>
+      <div class="page-info-row">
+        <span class="page-info-key">URL</span>
+        <span class="page-info-val" id="pageUrl">—</span>
+      </div>
+      <div class="page-info-row" id="rowCanonical" style="display:none;">
+        <span class="page-info-key">Canonical</span>
+        <span class="page-info-val" id="pageCanonical">—</span>
+      </div>
+      <div class="page-info-row">
+        <span class="page-info-key">País</span>
+        <span class="page-info-val" id="pageCountryVal">—</span>
+      </div>
+    </div>
+
+    <div class="lang-card">
+      <div class="lang-label">Idioma detectado</div>
+      <div class="lang-name" id="langName">—</div>
+      <div class="lang-code" id="langCode">—</div>
+      <div class="confidence-row">
+        <div class="confidence-bar-wrap"><div class="confidence-bar" id="confBar"></div></div>
+        <div class="confidence-pct" id="confPct">—</div>
+      </div>
+      <div class="sources-row" id="sourcesRow"></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Palavras</div>
+        <div class="stat-value" id="wordCount">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Caracteres</div>
+        <div class="stat-value" id="charCount">—</div>
+      </div>
+    </div>
+
+    <div class="script-section">
+      <div class="script-title">Composição de escrita</div>
+      <div id="scriptBars"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
